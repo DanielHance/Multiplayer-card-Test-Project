@@ -2,6 +2,7 @@ extends Node2D
 
 const COLLISION_MASK_CARD = 1
 const COLLISION_MASK_CARD_SLOT = 2
+const DEFAULT_CARD_MOVE_SPEED = 0.1
 
 var card_being_dragged
 var screen_size
@@ -13,7 +14,7 @@ var player_hand_reference
 func _ready() -> void:
 	screen_size = get_viewport_rect().size
 	player_hand_reference = $"../PlayerHand"
-
+	$"../InputManager".connect("left_mouse_button_released", on_left_click_released)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
@@ -21,18 +22,6 @@ func _process(delta: float) -> void:
 		var mouse_pos = get_global_mouse_position()
 		card_being_dragged.position = Vector2(clamp(mouse_pos.x, 0, screen_size.x), clamp(mouse_pos.y, 0, screen_size.y))
 
-
-func _input(event):
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			#Check for card and picks up if left click on card
-			var card = raycast_check_for_card()
-			if card:
-				start_drag(card)
-		else:
-			#Drops card on left click relase
-			if card_being_dragged:
-				finish_drag()
 
 
 func start_drag(card):
@@ -51,15 +40,20 @@ func finish_drag():
 		card_slot_found.card_in_slot = true
 	else:
 		#Snaps card back into hand if not dropped in empty card slot
-		player_hand_reference.add_card_to_hand(card_being_dragged)
+		player_hand_reference.add_card_to_hand(card_being_dragged, DEFAULT_CARD_MOVE_SPEED)
 	card_being_dragged = null
 
 
 func connect_card_signals(card):
 	card.connect("hovered_on", on_hovered_on_card)
 	card.connect("hovered_off", on_hovered_off_card)
-	
-	
+
+
+func on_left_click_released():
+	if card_being_dragged:
+		finish_drag()
+
+
 func on_hovered_on_card(card):
 	if !is_hovering_on_card:
 		is_hovering_on_card = true
